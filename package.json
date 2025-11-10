@@ -1,0 +1,22 @@
+{
+  "name": "kipubank-v2",
+  "version": "1.0.0",
+  "description": "KipuBankV2 with Uniswap V2 integration",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx hardhat test"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "hardhat": "^2.17.0",
+    "@nomiclabs/hardhat-waffle": "^2.0.5",
+    "chai": "^4.3.7",
+    "ethereum-waffle": "^3.4.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.0",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0"
+  }
+}
