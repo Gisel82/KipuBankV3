@@ -17,14 +17,14 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     // --------------------------------------------------------------------------
-    // Roles
+    //                                Roles
     // --------------------------------------------------------------------------
 
     /// @notice Role that allows managing supported tokens.
     bytes32 public constant BANK_MANAGER_ROLE = keccak256("BANK_MANAGER_ROLE");
 
     // --------------------------------------------------------------------------
-    // Immutable parameters
+    //                          Immutable parameters
     // --------------------------------------------------------------------------
 
     /// @notice Maximum USDC withdrawable per transaction.
@@ -40,7 +40,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     IUniswapV2Router public immutable uniswapRouter;
 
     // --------------------------------------------------------------------------
-    // Storage
+    //                                 Storage
     // --------------------------------------------------------------------------
 
     /// @notice Tracks deposited balances per user in USDC denominations.
@@ -62,7 +62,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     uint256 public totalDepositsUSD;
 
     // --------------------------------------------------------------------------
-    // Errors
+    //                                 Errors
     // --------------------------------------------------------------------------
 
     /// @notice Thrown when amount is zero.
@@ -88,7 +88,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     error DirectCall();
 
     // --------------------------------------------------------------------------
-    // Events
+    //                                Events
     // --------------------------------------------------------------------------
 
     /// @notice Emitted when a deposit completes.
@@ -117,7 +117,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     event TokenUnsupported(address indexed token);
 
     // --------------------------------------------------------------------------
-    // Modifiers
+    //                                  Modifiers
     // --------------------------------------------------------------------------
 
     /// @notice Ensures amountOutMin > 0 for slippage protection.
@@ -155,7 +155,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     // --------------------------------------------------------------------------
-    // Constructor
+    //                                 Constructor
     // --------------------------------------------------------------------------
 
     constructor(
@@ -177,7 +177,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     // --------------------------------------------------------------------------
-    // Admin Functions
+    //                               Admin Functions
     // --------------------------------------------------------------------------
 
     /// @notice Adds a token as depositable.
@@ -216,7 +216,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     // --------------------------------------------------------------------------
-    // Deposits
+    //                                  Deposits
     // --------------------------------------------------------------------------
 
     function deposit(
@@ -263,7 +263,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     // --------------------------------------------------------------------------
-    // Withdrawals
+    //                                Withdrawals
     // --------------------------------------------------------------------------
 
     function withdraw(uint256 amount)
@@ -282,7 +282,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     // --------------------------------------------------------------------------
-    // Views
+    //                                  Views
     // --------------------------------------------------------------------------
 
     function getUserBalance(address user)
@@ -302,7 +302,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     // --------------------------------------------------------------------------
-    // Internal Swap Logic
+    //                              Internal Swap Logic
     // --------------------------------------------------------------------------
 
     function _swapEthToUSDC(
@@ -359,7 +359,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     // --------------------------------------------------------------------------
-    // Fallback protection
+    //                         Fallback protection
     // --------------------------------------------------------------------------
 
     receive() external payable {
@@ -370,3 +370,4 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
         revert DirectCall();
     }
 }
+
