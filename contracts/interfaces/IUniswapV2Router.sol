@@ -1,11 +1,11 @@
-// SPDX-License-Identifier: MIT
+/// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-/// @title IUniswapV2Router Minimal Interface
-/// @notice Minimal functions required by KipuBankV3 for swapping tokens
 interface IUniswapV2Router {
-    function WETH() external pure returns (address);
+    // Retorna la dirección del WETH del router
+    function WETH() external view returns (address);
 
+    // Swap de ETH a tokens
     function swapExactETHForTokens(
         uint amountOutMin,
         address[] calldata path,
@@ -13,6 +13,7 @@ interface IUniswapV2Router {
         uint deadline
     ) external payable returns (uint[] memory amounts);
 
+    // Swap de tokens a tokens
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
