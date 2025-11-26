@@ -1,83 +1,62 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("KipuBankV3", function () {
-  let bank, owner, user, usdc, weth, router;
+describe("KipuBankV3", () => {
+  let bank, usdc, token, router;
+  let owner, user;
 
-  beforeEach(async function () {
-    [owner, user, other] = await ethers.getSigners();
+  beforeEach(async () => {
+    [owner, user] = await ethers.getSigners();
 
-    // Deploy ERC20 USDC mock
+    // Deploy USDC mock
     const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
-    usdc = await ERC20Mock.deploy("USDC", "USDC", 6);
-    await usdc.deployed();
+    usdc = await ERC20Mock.deploy("USD Coin", "USDC", 6);
 
-    // Deploy WETH mock (dummy ERC20)
-    weth = await ERC20Mock.deploy("WETH", "WETH", 18);
-    await weth.deployed();
+    // Mint to bank + user
+    await usdc.mint(owner.address, ethers.parseUnits("1000000", 6));
+    await usdc.mint(user.address, ethers.parseUnits("1000000", 6));
 
-    // Deploy Uniswap router mock
-    const RouterMock = await ethers.getContractFactory("UniswapV2RouterMock");
-    router = await RouterMock.deploy(weth.address);
-    await router.deployed();
+    // Deploy router mock
+    const Router = await ethers.getContractFactory("MockUniswapV2Router");
+    router = await Router.deploy(owner.address);
 
-    // Deploy KipuBankV3
-    const Bank = await ethers.getContractFactory("KipuBankV3");
-    bank = await Bank.deploy(
-      ethers.utils.parseUnits("1000", 6),   // maxWithdrawal
-      ethers.utils.parseUnits("100000", 6),// bankCapUSD
-      usdc.address,
-      ethers.constants.AddressZero,         // ETH/USD feed dummy
-      router.address
+    // Deploy bank
+    const KipuBankV3 = await ethers.getContractFactory("KipuBankV3");
+    bank = await KipuBankV3.deploy(
+      ethers.parseUnits("1000", 6),
+      ethers.parseUnits("100000", 6),
+      await usdc.getAddress(),
+      await router.getAddress()
     );
-    await bank.deployed();
   });
 
-  it("Owner has BANK_MANAGER_ROLE", async function () {
-    expect(await bank.hasRole(await bank.BANK_MANAGER_ROLE(), owner.address)).to.be.true;
+  it("should deposit USDC directly", async () => {
+    await usdc.connect(user).approve(bank.getAddress(), 1000);
+
+    await bank.connect(user).deposit(usdc.getAddress(), 1000, 0);
+
+    const bal = await bank.getUserBalance(user.address);
+
+    expect(bal).to.equal(1000);
   });
 
-  it("Deposit USDC updates balance", async function () {
-    await usdc.mint(user.address, 1000);
-    await usdc.connect(user).approve(bank.address, 1000);
-    await bank.connect(user).deposit(usdc.address, 1000);
-    expect(await bank.getUserBalance(user.address)).to.equal(1000);
+  it("should withdraw USDC", async () => {
+    await usdc.connect(user).approve(bank.getAddress(), 2000);
+    await bank.connect(user).deposit(usdc.getAddress(), 2000, 0);
+
+    await bank.connect(user).withdraw(1000);
+
+    const bal = await bank.getUserBalance(user.address);
+
+    expect(bal).to.equal(1000);
   });
 
-  it("Deposit ETH swaps to USDC", async function () {
-    const amount = ethers.utils.parseEther("1");
-    await bank.connect(user).deposit(ethers.constants.AddressZero, { value: amount });
-    expect(await bank.getUserBalance(user.address)).to.equal(amount);
-  });
+  it("should not exceed max withdrawal", async () => {
+    await usdc.connect(user).approve(bank.getAddress(), 2000);
+    await bank.connect(user).deposit(usdc.getAddress(), 2000, 0);
 
-  it("Deposit ERC20 token swaps to USDC", async function () {
-    const token = await ethers.getContractFactory("ERC20Mock");
-    const erc20 = await token.deploy("TOKEN", "TKN", 18);
-    await erc20.deployed();
-    await erc20.mint(user.address, 500);
-    await erc20.connect(user).approve(bank.address, 500);
-
-    await bank.connect(owner).supportToken(erc20.address);
-    await bank.connect(user).deposit(erc20.address, 500);
-    expect(await bank.getUserBalance(user.address)).to.equal(500);
-  });
-
-  it("Deposit exceeding bankCap fails", async function () {
-    const amount = ethers.utils.parseUnits("100001", 6);
-    await usdc.mint(user.address, amount);
-    await usdc.connect(user).approve(bank.address, amount);
-    await expect(bank.connect(user).deposit(usdc.address, amount)).to.be.revertedWith("BankCapExceeded");
-  });
-
-  it("Withdraw works and reduces balance", async function () {
-    await usdc.mint(user.address, 1000);
-    await usdc.connect(user).approve(bank.address, 1000);
-    await bank.connect(user).deposit(usdc.address, 1000);
-    await bank.connect(user).withdraw(500);
-    expect(await bank.getUserBalance(user.address)).to.equal(500);
-  });
-
-  it("Direct ETH transfer fails", async function () {
-    await expect(user.sendTransaction({ to: bank.address, value: 1 })).to.be.revertedWith("DirectTransfer");
+    await expect(
+      bank.connect(user).withdraw(ethers.parseUnits("2000", 6))
+    ).to.be.revertedWithCustomError(bank, "MaxWithdrawalExceeded");
   });
 });

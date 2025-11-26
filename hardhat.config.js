@@ -1,25 +1,34 @@
 require("@nomicfoundation/hardhat-toolbox");
-const path = require("path");
+require("hardhat-contract-sizer");
+require("dotenv").config();
 
 module.exports = {
-  solidity: "0.8.30",
+  solidity: {
+    version: "0.8.30",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
+
   paths: {
-    sources: "./src",   
-    tests: "./it",      
-    cache: "./.cache",
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
     artifacts: "./artifacts"
   },
+
   typechain: {
     outDir: "typechain",
     target: "ethers-v6"
   },
-  resolve: {
-    modules: [path.resolve(__dirname, ".deps/npm"), "npm"]
-  },
+
   networks: {
     hardhat: {
-      chainId: 1337
+      chainId: 1337,
+      allowUnlimitedContractSize: true
     }
   }
 };
-
