@@ -5,7 +5,7 @@
   "scripts": {
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage --temp artifacts",
-    "coverage:ci": "npx hardhat coverage --temp artifacts && coveralls < coverage/lcov.info",
+    "coverage:ci": "npx hardhat coverage --temp artifacts && cat coverage/lcov.info | coveralls",
     "lint": "npx solhint 'contracts/**/*.sol'",
     "deploy": "npx hardhat run scripts/deploy.js --network hardhat"
   },
