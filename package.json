@@ -4,7 +4,8 @@
   "description": "KipuBankV3 with Uniswap V2 mocking and Hardhat tests",
   "scripts": {
     "test": "npx hardhat test",
-    "coverage": "npx hardhat coverage",
+    "coverage": "npx hardhat coverage --temp artifacts",
+    "coverage:ci": "npx hardhat coverage --temp artifacts && coveralls < coverage/lcov.info",
     "lint": "npx solhint 'contracts/**/*.sol'",
     "deploy": "npx hardhat run scripts/deploy.js --network hardhat"
   },
@@ -23,10 +24,5 @@
     "@uniswap/v2-core": "1.0.1",
     "@uniswap/v2-periphery": "1.1.0-beta.0",
     "dotenv": "^16.4.5"
-  }
-  "scripts": {
-    "test": "hardhat test",
-    "coverage": "hardhat coverage --temp artifacts",
-    "coverage:ci": "hardhat coverage --temp artifacts && coveralls < coverage/lcov.info"
   }
 }
