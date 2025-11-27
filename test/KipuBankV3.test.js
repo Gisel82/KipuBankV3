@@ -1,62 +1,169 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("KipuBankV3", () => {
-  let bank, usdc, token, router;
-  let owner, user;
+describe("KipuBankV3", function () {
+    let owner, user, user2;
+    let usdc, weth, tokenA;
+    let router;
+    let bank;
 
-  beforeEach(async () => {
-    [owner, user] = await ethers.getSigners();
+    const maxWithdrawal = ethers.parseUnits("1000", 6);
+    const bankCap = ethers.parseUnits("1000000", 6);
 
-    // Deploy USDC mock
-    const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
-    usdc = await ERC20Mock.deploy("USD Coin", "USDC", 6);
+    beforeEach(async function () {
+        [owner, user, user2] = await ethers.getSigners();
 
-    // Mint to bank + user
-    await usdc.mint(owner.address, ethers.parseUnits("1000000", 6));
-    await usdc.mint(user.address, ethers.parseUnits("1000000", 6));
+        // Mock tokens
+        const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
+        usdc = await ERC20Mock.deploy("USD Coin", "USDC", ethers.parseUnits("1000000", 6));
+        weth = await ERC20Mock.deploy("WETH", "WETH", ethers.parseUnits("1000000", 18));
+        tokenA = await ERC20Mock.deploy("TokenA", "TKA", ethers.parseUnits("1000000", 18));
 
-    // Deploy router mock
-    const Router = await ethers.getContractFactory("MockUniswapV2Router");
-    router = await Router.deploy(owner.address);
+        // Router mock
+        const Router = await ethers.getContractFactory("MockUniswapV2Router");
+        router = await Router.deploy(await weth.getAddress());
 
-    // Deploy bank
-    const KipuBankV3 = await ethers.getContractFactory("KipuBankV3");
-    bank = await KipuBankV3.deploy(
-      ethers.parseUnits("1000", 6),
-      ethers.parseUnits("100000", 6),
-      await usdc.getAddress(),
-      await router.getAddress()
-    );
-  });
+        // Bank
+        const Bank = await ethers.getContractFactory("KipuBankV3");
+        bank = await Bank.deploy(
+            maxWithdrawal,
+            bankCap,
+            await usdc.getAddress(),
+            await router.getAddress()
+        );
 
-  it("should deposit USDC directly", async () => {
-    await usdc.connect(user).approve(bank.getAddress(), 1000);
+        // Grant support for tokenA
+        await bank.supportToken(await tokenA.getAddress());
+    });
 
-    await bank.connect(user).deposit(usdc.getAddress(), 1000, 0);
+    // -----------------------------
+    // CONSTRUCTOR TEST
+    // -----------------------------
+    it("constructor inicializa correctamente", async function () {
+        expect(await bank.maxWithdrawal()).to.equal(maxWithdrawal);
+        expect(await bank.bankCapUSD()).to.equal(bankCap);
+        expect(await bank.usdc()).to.equal(await usdc.getAddress());
+        expect(await bank.uniswapRouter()).to.equal(await router.getAddress());
+    });
 
-    const bal = await bank.getUserBalance(user.address);
+    // -----------------------------
+    // SUPPORT TOKEN TESTS
+    // -----------------------------
+    it("permite agregar un token soportado", async function () {
+        expect(await bank.isTokenSupported(await tokenA.getAddress())).to.equal(true);
+    });
 
-    expect(bal).to.equal(1000);
-  });
+    it("permite remover un token soportado", async function () {
+        await bank.unsupportToken(await tokenA.getAddress());
+        expect(await bank.isTokenSupported(await tokenA.getAddress())).to.equal(false);
+    });
 
-  it("should withdraw USDC", async () => {
-    await usdc.connect(user).approve(bank.getAddress(), 2000);
-    await bank.connect(user).deposit(usdc.getAddress(), 2000, 0);
+    // -----------------------------
+    // DEPOSIT ETH
+    // -----------------------------
+    it("permite depositar ETH y lo convierte a USDC", async function () {
+        const ethDeposit = ethers.parseEther("1"); // 1 ETH
 
-    await bank.connect(user).withdraw(1000);
+        await bank.connect(user).deposit(
+            ethers.ZeroAddress,
+            0,
+            1,              // amountOutMin > 0 (protección slippage)
+            { value: ethDeposit }
+        );
 
-    const bal = await bank.getUserBalance(user.address);
+        const bal = await bank.getUserBalance(user.address);
+        expect(bal).to.be.gt(0);
+    });
 
-    expect(bal).to.equal(1000);
-  });
+    // -----------------------------
+    // DEPOSIT USDC DIRECTO
+    // -----------------------------
+    it("acepta depósito directo en USDC", async function () {
+        const amount = ethers.parseUnits("500", 6);
 
-  it("should not exceed max withdrawal", async () => {
-    await usdc.connect(user).approve(bank.getAddress(), 2000);
-    await bank.connect(user).deposit(usdc.getAddress(), 2000, 0);
+        await usdc.transfer(user.address, amount);
+        await usdc.connect(user).approve(bank.getAddress(), amount);
 
-    await expect(
-      bank.connect(user).withdraw(ethers.parseUnits("2000", 6))
-    ).to.be.revertedWithCustomError(bank, "MaxWithdrawalExceeded");
-  });
+        await bank.connect(user).deposit(
+            await usdc.getAddress(),
+            amount,
+            1
+        );
+
+        const bal = await bank.getUserBalance(user.address);
+        expect(bal).to.equal(amount);
+    });
+
+    // -----------------------------
+    // DEPOSIT TOKEN NO SOPORTADO
+    // -----------------------------
+    it("revierte al depositar token no soportado", async function () {
+        const amount = ethers.parseUnits("100", 18);
+
+        await tokenA.transfer(user.address, amount);
+        await tokenA.connect(user).approve(bank.getAddress(), amount);
+
+        // remover soporte
+        await bank.unsupportToken(await tokenA.getAddress());
+
+        await expect(
+            bank.connect(user).deposit(await tokenA.getAddress(), amount, 1)
+        ).to.be.revertedWithCustomError(bank, "TokenNotSupported");
+    });
+
+    // -----------------------------
+    // DEPOSIT TOKEN SOPORTADO
+    // -----------------------------
+    it("permite depositar token soportado y swappear a USDC", async function () {
+        const amount = ethers.parseUnits("100", 18);
+
+        await tokenA.transfer(user.address, amount);
+        await tokenA.connect(user).approve(bank.getAddress(), amount);
+
+        await bank.connect(user).deposit(
+            await tokenA.getAddress(),
+            amount,
+            1
+        );
+
+        const bal = await bank.getUserBalance(user.address);
+        expect(bal).to.be.gt(0);
+    });
+
+    // -----------------------------
+    // WITHDRAW
+    // -----------------------------
+    it("permite retirar si hay balance suficiente", async function () {
+        const amount = ethers.parseUnits("500", 6);
+
+        // deposit USDC
+        await usdc.transfer(user.address, amount);
+        await usdc.connect(user).approve(bank.getAddress(), amount);
+        await bank.connect(user).deposit(await usdc.getAddress(), amount, 1);
+
+        // withdraw
+        await bank.connect(user).withdraw(amount);
+
+        expect(await bank.getUserBalance(user.address)).to.equal(0);
+    });
+
+    it("revierte si retiro supera maxWithdrawal", async function () {
+        const tooMuch = maxWithdrawal + 1n;
+
+        await expect(
+            bank.connect(user).withdraw(tooMuch)
+        ).to.be.revertedWithCustomError(bank, "MaxWithdrawalExceeded");
+    });
+
+    // -----------------------------
+    // FALLBACK / RECEIVE
+    // -----------------------------
+    it("rejects direct ETH transfer (receive)", async function () {
+        await expect(
+            user.sendTransaction({
+                to: bank.getAddress(),
+                value: ethers.parseEther("1")
+            })
+        ).to.be.reverted;
+    });
 });
