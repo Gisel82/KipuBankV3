@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IUniswapV2Router.sol";
@@ -193,8 +193,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     }
 
     function _swapTokenToUSDC(address token, uint256 amountIn, uint256 amountOutMin) internal returns (uint256 usdcAmount) {
-        IERC20(token).safeApprove(address(uniswapRouter), 0);
-        IERC20(token).safeApprove(address(uniswapRouter), amountIn);
+        IERC20(token).forceApprove(address(uniswapRouter), amountIn);
 
         address[] memory path = new address[](2);
         path[0] = token;
@@ -212,7 +211,6 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
 
         usdcAmount = usdc.balanceOf(address(this)) - before;
 
-        IERC20(token).safeApprove(address(uniswapRouter), 0);
     }
 
     // Fallback protection
