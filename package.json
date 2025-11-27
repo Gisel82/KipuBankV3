@@ -24,4 +24,9 @@
     "@uniswap/v2-periphery": "1.1.0-beta.0",
     "dotenv": "^16.4.5"
   }
+  "scripts": {
+    "test": "hardhat test",
+    "coverage": "hardhat coverage --temp artifacts",
+    "coverage:ci": "hardhat coverage --temp artifacts && coveralls < coverage/lcov.info"
+  }
 }
