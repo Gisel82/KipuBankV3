@@ -1,3 +1,4 @@
+[![Coverage Status](https://coveralls.io/repos/github/Gisel82/KipuBankV3/badge.svg)](https://coveralls.io/github/Gisel82/KipuBankV3)
 # KipuBankV3
 
 Mejoras implementadas
