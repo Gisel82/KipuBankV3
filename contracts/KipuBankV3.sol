@@ -3,7 +3,7 @@
 pragma solidity ^0.8.30;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IUniswapV2Router.sol";
@@ -274,7 +274,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
         uint256 ethAmount,
         uint256 amountOutMin
     ) internal returns (uint256 usdcAmount) {
-        address;
+        address[] memory path = new address[](2);
         path[0] = uniswapRouter.WETH();
         path[1] = address(usdc);
 
@@ -298,7 +298,7 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
     ) internal returns (uint256 usdcAmount) {
         IERC20(token).approve(address(uniswapRouter), amountIn);
 
-        address;
+        address[] memory path = new address[](2);
         path[0] = token;
         path[1] = address(usdc);
 
@@ -327,3 +327,4 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
         revert DirectCall();
     }
 }
+
