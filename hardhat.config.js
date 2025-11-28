@@ -20,6 +20,15 @@ module.exports = {
     artifacts: "./artifacts"
   },
 
+  mocha: {
+    timeout: 200000
+  },
+  solidityLoader: {
+    remappings: [
+      "@openzeppelin/=node_modules/@openzeppelin/"
+    ]
+  },
+
   typechain: {
     outDir: "typechain",
     target: "ethers-v6"
