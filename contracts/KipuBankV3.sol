@@ -9,7 +9,7 @@ import "./interfaces/IUniswapV2Router.sol";
 import "./mocks/ERC20Mock.sol";
 
 /// @title KipuBankV3 (Optimized & Audited Version)
-/// @author Kipu (example)
+/// @author gisel
 /// @notice Custodial bank that accepts ETH/ERC20 deposits, converts them to USDC,
 ///         and allows controlled withdrawals. All deposits are converted to USDC.
 /// @dev This contract relies on an external UniswapV2-like router interface.
@@ -274,3 +274,4 @@ contract KipuBankV3 is AccessControl, ReentrancyGuard {
         revert DirectCall();
     }
 }
+
