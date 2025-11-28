@@ -24,9 +24,9 @@ contract MockUniswapV2Router is IUniswapV2Router {
     ) external payable override returns (uint[] memory amounts) {
         require(path[path.length - 1] != address(0), "invalid path");
 
-        // mock: 1 ETH = 2000 USDC
+        // mock: 1 ETH = 2000 USDC (accounting for decimals: ETH=18, USDC=6)
         uint256 ethAmount = msg.value;
-        uint256 out = ethAmount * 2000;
+        uint256 out = (ethAmount * 2000) / 1e18;
 
         //Validate slippage (minimum output amount)
         require(out >= amountOutMin, "Insufficient output amount");
@@ -48,8 +48,8 @@ contract MockUniswapV2Router is IUniswapV2Router {
     ) external override returns (uint[] memory amounts) {
         require(path[path.length - 1] != address(0), "invalid path");
 
-        // mock: 1 token = 2 USDC
-        uint out = amountIn * 2;
+        // mock: 1 token = 2 USDC (accounting for decimals: Token=18, USDC=6)
+        uint out = (amountIn * 2) / 1e18;
         require(out >= amountOutMin, "Insufficient output amount"); // Check slippage
 
         ERC20Mock(path[path.length - 1]).mint(to, out);
@@ -59,3 +59,4 @@ contract MockUniswapV2Router is IUniswapV2Router {
         amounts[1] = out;
     }
 }
+
